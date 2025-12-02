@@ -1,1 +1,57 @@
+name: Frontend CI/CD → ECR → Update Manifests
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  APP_NAME: frontend
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout frontend repo
+      uses: actions/checkout@v4
+
+    - name: Checkout manifests repo
+      uses: actions/checkout@v4
+      with:
+        repository: sankarsv7/manifests
+        token: ${{ secrets.MANIFESTS_REPO_TOKEN }}
+        path: manifests
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build & Push Image
+      run: |
+        IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${APP_NAME}:${GITHUB_SHA::7}"
+        echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+        docker build -t $IMAGE .
+        docker push $IMAGE
+
+    - name: Update frontend deployment image
+      run: |
+        FILE="manifests/apps/frontend/deployment.yaml"
+        sed -i "s|image: .*|image: ${IMAGE}|g" "$FILE"
+
+    - name: Commit & Push Manifests
+      run: |
+        cd manifests
+        git config user.email "github-actions@github.com"
+        git config user.name "GitHub Actions"
+        git add apps/frontend/deployment.yaml
+        git commit -m "ci: update frontend image → ${IMAGE} [skip ci]" || echo "No changes"
+        git push origin HEAD:main
 
