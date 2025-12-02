@@ -11,6 +11,7 @@ export class TutorialService {
   constructor(private http: HttpClient) {}
 
   getAllTutorials() {
+    console.log("trigger test:"+ `${environment.apiUrl}/tutorial`);
     return this.http.get(`${environment.apiUrl}/tutorial`);
   }
 
