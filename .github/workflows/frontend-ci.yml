@@ -3,6 +3,8 @@ name: Frontend CI/CD → ECR → Update Manifests
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - '**'
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
