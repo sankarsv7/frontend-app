@@ -9,13 +9,13 @@ RUN npm install
 COPY . .
 RUN npm run build --prod
 
-# Step 2: NGINX Serve Static Files
+# Step 2: NGINX to Serve Angular
 FROM nginx:alpine
 
 # Copy Angular build output
-COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
+COPY --from=build /app/dist/tutorial-frontend /usr/share/nginx/html
 
-# Copy custom nginx config
+# Copy nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
