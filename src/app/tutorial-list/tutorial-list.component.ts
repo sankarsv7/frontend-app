@@ -15,8 +15,9 @@ export class TutorialListComponent {
   constructor(private tutorialService: TutorialService) {}
 
   ngOnInit() {
-    this.tutorialService.getTutorials().subscribe((data: any[]) => {
+    this.tutorialService.getAllTutorials().subscribe((data: any[]) => {
       this.tutorials = data;
     });
-  }
+}
+
 }
