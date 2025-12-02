@@ -1,13 +1,10 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { TutorialListComponent } from './tutorial-list/tutorial-list.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [TutorialListComponent],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
 })
-export class AppComponent {
-  title = 'tutorial-frontend';
-}
+export class AppComponent {}
