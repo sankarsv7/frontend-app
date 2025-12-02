@@ -1,5 +1,5 @@
 {
-  "name": "tutorial-frontend",
+  "name": "frontend-app",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:tutorial-frontend": "node dist/tutorial-frontend/server/server.mjs"
+    "serve:ssr:frontend-app": "node dist/frontend-app/server/server.mjs"
   },
   "private": true,
   "dependencies": {
