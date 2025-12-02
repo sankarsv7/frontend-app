@@ -2,14 +2,17 @@ name: Frontend CI/CD → ECR → Update Manifests
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
     paths:
-      - '**'
+      - "**"
+      - "!README.md"
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: 262251629687
   APP_NAME: frontend
+  MANIFESTS_REPO: sankarsv7/manifests
   MANIFESTS_PATH: apps/frontend
 
 jobs:
@@ -17,42 +20,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout frontend repo
-      uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Checkout manifests repo
-      uses: actions/checkout@v4
-      with:
-        repository: sankarsv7/manifests
-        token: ${{ secrets.MANIFESTS_REPO_TOKEN }}
-        path: manifests
-
-    - name: Install AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+        aws-region: ${{ env.AWS_REGION }}
 
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
+    - name: Login to ECR
+      uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build and Push FE image
+    - name: Build & Push FE image
       run: |
         IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${APP_NAME}:${GITHUB_SHA::7}"
         echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
         docker build -t $IMAGE .
         docker push $IMAGE
 
-    - name: Update FE image in manifests repo
+    - name: Checkout manifests repo
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.MANIFESTS_REPO }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        path: manifests
+
+    - name: Update frontend image in manifests repo
       run: |
-        FILE="manifests/${MANIFESTS_PATH}/deployment.yaml"
+        cd manifests/${MANIFESTS_PATH}
 
-        sed -i "s|IMAGE_PLACEHOLDER|${IMAGE}|" "$FILE"
+        echo "Updating image tag to: $IMAGE"
 
-        cd manifests
-        git config user.name "GitHub Actions"
+        sed -i "s|image: .*|image: ${IMAGE}|g" deployment.yaml
+
+        git config user.name "github-actions"
         git config user.email "github-actions@github.com"
-        git add .
-        git commit -m "ci: update frontend image → ${IMAGE} [skip ci]" || echo "No changes"
-        git push origin main
+        git add deployment.yaml
+        git commit -m "ci: update frontend image -> ${IMAGE}" || echo "nothing to commit"
+        git push
+
+    - name: Force ArgoCD sync (optional)
+      run: |
+        echo "ArgoCD will automatically sync if auto-sync is enabled."
